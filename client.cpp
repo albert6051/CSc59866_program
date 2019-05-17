@@ -15,7 +15,7 @@
 
 using namespace std;
 
-#define MAXDATASIZE 4096 // max number of bytes we can get at once 
+#define MAXDATASIZE 4097 // max number of bytes we can get at once 
 
 // get sockaddr, IPv4 or IPv6:
 void *get_in_addr(struct sockaddr *sa)
@@ -123,6 +123,7 @@ int main(int argc, char *argv[])
         // try to split the header information from the all the data send by server
         string header;
         string content;
+        size_t contentLength;
         if(headerFound == 0){ // header will appear in the beginning of the message
             size_t endFound = holder.find("\r\n\r\n");
             header = holder.substr(0, endFound+4);
@@ -132,6 +133,12 @@ int main(int argc, char *argv[])
             if(check != "HTTP/1.1 200"){
                 exit(1);
             }
+            size_t clenptr = header.find("Content-Length"); // Get Content-Length
+            clenptr = header.find(": ", clenptr) + 2;       // Jump to colon pos + 2
+            string clenstr = header.substr(                 // Substring of...
+                    clenptr,                                // the number position...
+                    header.find("\r\n", clenptr) - clenptr);// ... and length of number before /r/n
+            contentLength = atoi(clenstr.c_str());          // Convert to number
         }
         // find the position split the folder path and file name
         size_t found = directory.rfind('/');
@@ -141,7 +148,12 @@ int main(int argc, char *argv[])
         // generate the command line to create folders and file
         char pathFileGen[100];
         bzero(pathFileGen, 100);
-        sprintf(pathFileGen, "mkdir -p %s && touch %s", path.c_str(), fileName.c_str());
+        if(path.size() == 0){
+            sprintf(pathFileGen, "touch %s", fileName.c_str());
+        }else{
+            sprintf(pathFileGen, "mkdir -p %s && touch %s", path.c_str(), fileName.c_str());
+        }
+        
         // use the command line to make system call to create folders and file
         const int dir_err = system(pathFileGen);
         // Open the file allowing to read and write, create file if it doesn't exist
@@ -169,6 +181,9 @@ int main(int argc, char *argv[])
                     if ( numbytes == 0 ) break; // got to the end of the stream
                     if ( fwrite(buf, sizeof(char), numbytes, fptr) == -1 ) perror("file write failed");
                     total += numbytes;
+                    // Compare with Content-Length header
+                    if (total >= contentLength)
+                        break;
                 }
                 // connection is lost therefore reconnect
                 for(p = servinfo; p != NULL; p = p->ai_next) {
@@ -222,6 +237,7 @@ int main(int argc, char *argv[])
                     char header[300];
                     size_t headerLength;
                     size_t contentLength;
+                    size_t totalLength;
                     if(headerFound == 0){ // header will appear in the beginning of the message
                         size_t endFound = holder.find("\r\n\r\n");
                         headerLength = endFound+4;
@@ -234,6 +250,12 @@ int main(int argc, char *argv[])
                         if(check != "HTTP/1.1 200"){
                             exit(1);
                         }
+                        size_t clenptr = headerCK.find("Content-Length"); // Get Content-Length
+                        clenptr = headerCK.find(": ", clenptr) + 2;       // Jump to colon pos + 2
+                        string clenstr = headerCK.substr(                 // Substring of...
+                                            clenptr,                                // the number position...
+                                            headerCK.find("\r\n", clenptr) - clenptr);// ... and length of number before /r/n
+                        totalLength = atoi(clenstr.c_str());          // Convert to number
                     }
                     // find the position split the folder path and file name
                     size_t found = url.rfind('/');
@@ -248,8 +270,7 @@ int main(int argc, char *argv[])
                     const int dir_err = system(pathFileGen);
                     fpti = fopen( fileName.c_str(), "wb+");
                     if ( fwrite(imgBuf+headerLength, 1, contentLength, fpti) == -1 ) perror("file write failed");
-                    total += numbytes;
-
+                    total = numbytes;
                     while (1)
                     {   
                         size_t numbytes = recv(sockfd, imgBuf, MAXDATASIZE-1, 0);
@@ -257,6 +278,9 @@ int main(int argc, char *argv[])
                         if ( numbytes == 0 ) break; // got to the end of the stream
                         if ( fwrite(imgBuf, sizeof(char), numbytes, fpti) == -1 ) perror("file write failed");
                         total += numbytes;
+                        if (total >= totalLength)
+                            break;
+                        
                     }
                     fclose(fpti);
                     srcFound = search.find("src=");
