@@ -111,7 +111,7 @@ int main(int argc, char *argv[])
             exit(1); // exit for incorrect amount of argument
         }
         // conditional request
-        sprintf(msg, "GET %s HTTP/1.1\r\nHost: %s\r\nIf-Modified-Since: %s\r\nKeep-Alive: 115\r\nConnection: keep-alive\r\n\r\n\r\n", directory.c_str(), hostname.c_str(), argv[4]);
+        sprintf(msg, "GET %s HTTP/1.1\r\nHost: %s\r\nIf-Modified-Since: %s\r\nIf-None-Match: \"122c8-58631a92bfc30\"\r\nKeep-Alive: 115\r\nConnection: keep-alive\r\n\r\n\r\n", directory.c_str(), hostname.c_str(), argv[4]);
     }
     // print the HTTP request
     printf("\n%s", msg);
@@ -188,22 +188,7 @@ int main(int argc, char *argv[])
                     if (total >= contentLength) // check if the full file is download
                         break; // stop downloading if everything is download
                 }
-                // connection is lost therefore reconnect
-                for(p = servinfo; p != NULL; p = p->ai_next) {
-                    // create the sock for connection
-                    if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
-                        perror("client: socket");
-                        continue;
-                    }
-                    // close the sockfd that is bad
-                    if (connect(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
-                        close(sockfd);
-                        perror("client: connect");
-                        continue;
-                    }
-                    break;
-                }
-                rewind(fptr); // go to start of the download file
+                // rewind(fptr); // go to start of the download file
                 fseek(fptr, 0, SEEK_END); // Sets the position indicator to the start of the file
                 size_t size = ftell(fptr); // check the size of the file
                 char* temp = (char*) malloc(sizeof(char) * size); // create a string to store the file
@@ -211,7 +196,7 @@ int main(int argc, char *argv[])
                 fread(temp, sizeof(char), size, fptr); // read the content of the file to temp
                 string search = temp; // convert temp to a string type from c string
                 size_t srcFound = search.find("src="); // search for additional object that need to download
-                size_t preFound // create variable to save the previous additional object url position 
+                size_t preFound; // create variable to save the previous additional object url position 
                 // check if any other object is found
                 while(1){
                     preFound = srcFound; // save the previous additional object url position
