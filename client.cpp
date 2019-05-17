@@ -133,14 +133,12 @@ int main(int argc, char *argv[])
             if(check != "HTTP/1.1 200"){
                 exit(1);
             }
-            size_t clenptr = header.find("Content-Length");
-            
-            string clenstr = header.substr(
-                    header.find(": ", clenptr) + 2,
-                    header.find("\r\n", clenptr) - clenptr);
-            contentLength = atoi(clenstr.c_str());
-            // TODO Remove
-            printf("%d\n", contentLength);
+            size_t clenptr = header.find("Content-Length"); // Get Content-Length
+            clenptr = header.find(": ", clenptr) + 2;       // Jump to colon pos + 2
+            string clenstr = header.substr(                 // Substring of...
+                    clenptr,                                // the number position...
+                    header.find("\r\n", clenptr) - clenptr);// ... and length of number before /r/n
+            contentLength = atoi(clenstr.c_str());          // Convert to number
         }
         // find the position split the folder path and file name
         size_t found = directory.rfind('/');
