@@ -195,11 +195,9 @@ int main(int argc, char *argv[])
                 rewind(fptr);
                 fread(temp, sizeof(char), size, fptr); // read the content of the file to temp
                 string search = temp; // convert temp to a string type from c string
-                size_t srcFound = search.find("src="); // search for additional object that need to download
-                size_t preFound; // create variable to save the previous additional object url position 
+                size_t srcFound = search.find("src="); // search for additional object that need to download 
                 // check if any other object is found
-                while(1){
-                    preFound = srcFound; // save the previous additional object url position
+                while(srcFound != string::npos){
                     // find the file directory and truncate it
                     string srcLoc = search.substr(srcFound); // cut the file to where src= is located
                     size_t firstQuote = srcLoc.find('\"'); // find the front quote for the url for the addtional object
@@ -277,10 +275,8 @@ int main(int argc, char *argv[])
                         
                     }
                     fclose(fpti); // close the file for addtional object
+                    search = search.substr(srcFound+4); // cut out the part that already search
                     srcFound = search.find("src="); // search of next addtional object
-                    if(srcFound == preFound){ // check if there is another object
-                        break; // stop the search and download of addtional object
-                    }
                 }
                 delete[] temp; // release the heap memory
                 fclose(fptr); // close the file for main file htm or html
