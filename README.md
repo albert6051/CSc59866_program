@@ -44,6 +44,6 @@ For GET it will print the header of the server response, save the files to your 
 
 For HEAD it will print the header of the server response.
 
-For conditional GET, it does same thing as regular GET except it will only download the html or the objects if they were modified after the date that is given by the user.
+For conditional GET, it does the same thing as regular GET except it will only download the html or the objects if they were modified after the date that is given by the user.
 
 Finally, to shut down the client, press `^C` (`[Ctrl] + [C]`).
